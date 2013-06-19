@@ -14,6 +14,8 @@
  */
 package grails.plugin.databasemigration
 
+import org.hibernate.dialect.PostgreSQLDialect
+
 import java.lang.reflect.Field
 
 import liquibase.database.Database
@@ -26,6 +28,8 @@ import liquibase.snapshot.DatabaseSnapshot
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.springframework.util.ReflectionUtils
+
+import java.sql.Types
 
 /**
  * @author <a href='mailto:burt@burtbeckwith.com'>Burt Beckwith</a>
@@ -140,6 +144,13 @@ class GormDiff extends Diff {
 
 	protected boolean areEquivalent(Column targetColumn, Column baseColumn) {
 		if (baseColumn.sqlTypeSet && baseColumn.typeName.equalsIgnoreCase(targetColumn.typeName)) {
+			return true
+		}
+
+		// Quick and dirty hack to bypass impedance mismatch for String properties mapped as text type but without sqlType
+		if ( dialect instanceof PostgreSQLDialect &&
+				baseColumn.dataType == Types.LONGVARCHAR && baseColumn.typeName?.toLowerCase() == "text" &&
+				targetColumn.dataType == Types.VARCHAR && targetColumn.columnSize == Integer.MAX_VALUE && targetColumn.typeName.toLowerCase() == "text" ) {
 			return true
 		}
 
